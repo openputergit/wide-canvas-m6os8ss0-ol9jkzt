@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Attendance System</title>
+    <script src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div id="app" class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-blue-600 text-white p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-xl font-bold">QR Attendance System</h1>
+                <div id="navButtons" class="space-x-4">
+                    <button onclick="showPage('login')" class="px-4 py-2 bg-blue-500 hover:bg-blue-700 rounded">Login</button>
+                    <button onclick="showPage('register')" class="px-4 py-2 bg-blue-500 hover:bg-blue-700 rounded">Register</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Login Page -->
+        <div id="loginPage" class="container mx-auto mt-10 p-4">
+            <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700">Email</label>
+                        <input type="email" id="loginEmail" class="w-full p-2 border rounded" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Password</label>
+                        <input type="password" id="loginPassword" class="w-full p-2 border rounded" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Login</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Register Page -->
+        <div id="registerPage" class="container mx-auto mt-10 p-4" style="display:none;">
+            <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6 text-center">Register</h2>
+                <form id="registerForm" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700">Name</label>
+                        <input type="text" id="regName" class="w-full p-2 border rounded" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Email</label>
+                        <input type="email" id="regEmail" class="w-full p-2 border rounded" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Password</label>
+                        <input type="password" id="regPassword" class="w-full p-2 border rounded" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Role</label>
+                        <select id="regRole" class="w-full p-2 border rounded" required>
+                            <option value="teacher">Teacher</option>
+                            <option value="student">Student</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Register</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Teacher Dashboard -->
+        <div id="teacherDashboard" class="container mx-auto mt-10 p-4" style="display:none;">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- QR Generation Section -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold mb-4">Generate QR Code</h2>
+                    <form id="qrForm" class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700">Subject</label>
+                            <input type="text" id="subject" class="w-full p-2 border rounded" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700">Branch</label>
+                            <select id="branch" class="w-full p-2 border rounded" required>
+                                <option value="FE">FE</option>
+                                <option value="SE">SE</option>
+                                <option value="TE">TE</option>
+                                <option value="BE">BE</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700">Expiration Time (minutes)</label>
+                            <input type="number" id="expiration" class="w-full p-2 border rounded" min="1" value="15" required>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Generate QR</button>
+                    </form>
+                    <div id="qrcode" class="mt-4 flex justify-center"></div>
+                </div>
+
+                <!-- Attendance Management Section -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold mb-4">Attendance Records</h2>
+                    <div class="space-y-4">
+                        <div class="flex gap-4">
+                            <select id="filterBranch" class="p-2 border rounded">
+                                <option value="all">All Branches</option>
+                                <option value="FE">FE</option>
+                                <option value="SE">SE</option>
+                                <option value="TE">TE</option>
+                                <option value="BE">BE</option>
+                            </select>
+                            <button onclick="exportAttendance()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                                Export CSV
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white">
+                                <thead>
+                                    <tr>
+                                        <th class="px-6 py-3 border-b text-left">Date</th>
+                                        <th class="px-6 py-3 border-b text-left">Subject</th>
+                                        <th class="px-6 py-3 border-b text-left">Student</th>
+                                        <th class="px-6 py-3 border-b text-left">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendanceTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Dashboard -->
+        <div id="studentDashboard" class="container mx-auto mt-10 p-4" style="display:none;">
+            <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-4">Scan QR Code</h2>
+                <div class="text-center">
+                    <button onclick="startScanner()" class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700">
+                        Open Scanner
+                    </button>
+                </div>
+                <div id="scannerDiv" class="mt-4"></div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="container mx-auto mt-10 p-4" style="display:none;">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-4">User Management</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 border-b text-left">Name</th>
+                                <th class="px-6 py-3 border-b text-left">Email</th>
+                                <th class="px-6 py-3 border-b text-left">Role</th>
+                                <th class="px-6 py-3 border-b text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        const appSlug = 'qr-attendance-system-001';
+        
+        // Initialize userId from localStorage or generate new one
+        let userId = localStorage.getItem('userId') || 'user_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('userId', userId);
+
+        // Page navigation
+        function showPage(page) {
+            const pages = ['loginPage', 'registerPage', 'teacherDashboard', 'studentDashboard', 'adminDashboard'];
+            pages.forEach(p => document.getElementById(p).style.display = 'none');
+            document.getElementById(page + 'Page').style.display = 'block';
+        }
+
+        // Registration handling
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userData = {
+                name: document.getElementById('regName').value,
+                email: document.getElementById('regEmail').value,
+                password: document.getElementById('regPassword').value,
+                role: document.getElementById('regRole').value
+            };
+
+            try {
+                const response = await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/mongodb', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer B1AilVp6aoPi9JsnzUul8rtKB212',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        appSlug: appSlug,
+                        action: 'create',
+                        collection: 'users',
+                        data: userData
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    Swal.fire('Success', 'Registration successful!', 'success');
+                    showPage('login');
+                } else {
+                    throw new Error('Registration failed');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Registration failed: ' + error.message, 'error');
+            }
+        });
+
+        // Login handling
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/mongodb', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer B1AilVp6aoPi9JsnzUul8rtKB212',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        appSlug: appSlug,
+                        action: 'read',
+                        collection: 'users',
+                        conditions: { email: email }
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success && result.result.length > 0) {
+                    const user = result.result[0];
+                    if (user.password === password) {
+                        currentUser = user;
+                        Swal.fire('Success', 'Login successful!', 'success');
+                        showPage(user.role);
+                        loadUserData();
+                    } else {
+                        throw new Error('Invalid password');
+                    }
+                } else {
+                    throw new Error('User not found');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Login failed: ' + error.message, 'error');
+            }
+        });
+
+        // QR Code generation
+        document.getElementById('qrForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const subject = document.getElementById('subject').value;
+            const branch = document.getElementById('branch').value;
+            const expiration = document.getElementById('expiration').value;
+
+            const sessionData = {
+                subject,
+                branch,
+                teacherId: currentUser._id,
+                timestamp: new Date().toISOString(),
+                expirationMinutes: parseInt(expiration)
+            };
+
+            try {
+                const response = await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/mongodb', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer B1AilVp6aoPi9JsnzUul8rtKB212',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        appSlug: appSlug,
+                        action: 'create',
+                        collection: 'sessions',
+                        data: sessionData
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    const sessionId = result.result.insertedId;
+                    const qr = qrcode(0, 'L');
+                    qr.addData(JSON.stringify({ sessionId }));
+                    qr.make();
+                    document.getElementById('qrcode').innerHTML = qr.createImgTag(5);
+                } else {
+                    throw new Error('Failed to create session');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Failed to generate QR code: ' + error.message, 'error');
+            }
+        });
+
+        // Load user data (for admin dashboard)
+        async function loadUserData() {
+            if (currentUser.role !== 'admin') return;
+
+            try {
+                const response = await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/mongodb', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer B1AilVp6aoPi9JsnzUul8rtKB212',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        appSlug: appSlug,
+                        action: 'read',
+                        collection: 'users'
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    const userTable = document.getElementById('userTable');
+                    userTable.innerHTML = '';
+                    result.result.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-6 py-4 border-b">${user.name}</td>
+                            <td class="px-6 py-4 border-b">${user.email}</td>
+                            <td class="px-6 py-4 border-b">${user.role}</td>
+                            <td class="px-6 py-4 border-b">
+                                <button onclick="deleteUser('${user._id}')" class="text-red-600 hover:text-red-800">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        userTable.appendChild(row);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        // Delete user function
+        async function deleteUser(userId) {
+            try {
+                const response = await fetch('https://r0c8kgwocscg8gsokogwwsw4.zetaverse.one/mongodb', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer B1AilVp6aoPi9JsnzUul8rtKB212',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        appSlug: appSlug,
+                        action: 'delete',
+                        collection: 'users',
+                        id: userId
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    Swal.fire('Success', 'User deleted successfully', 'success');
+                    loadUserData();
+                } else {
+                    throw new Error('Failed to delete user');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Failed to delete user: ' + error.message, 'error');
+            }
+        }
+
+        // Export attendance function
+        function exportAttendance() {
+            // Implementation for exporting attendance to CSV
+            // This would typically involve converting the attendance data to CSV format
+            // and triggering a download
+            alert('Export functionality would go here');
+        }
+
+        // Show login page by default
+        showPage('login');
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
